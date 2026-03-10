@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horizon Finder - EU Funding Intelligence</title>
+    <style>
+        :root {
+            --bg: #0f1723;
+            --card: #0d1a30;
+            --muted: #90aecb;
+            --accent: #63b3ed;
+            --success: #48bb78;
+            --danger: #fc8181;
+            --glass: rgba(99,179,237,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1723;
+            color: #e2eaf6;
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .app-container { display: flex; height: 100vh; }
+        .sidebar {
+            width: 280px; background: linear-gradient(180deg, #0d1a35 0%, #1a2d5a 100%);
+            border-right: 1px solid rgba(99,179,237,0.15);
+            overflow-y: auto; padding: 1.5rem 0;
+            position: relative;
+        }
+        .main-content { flex: 1; overflow-y: auto; }
+        
+        /* Sidebar */
+        .logo { padding: 0 1.5rem 2rem; }
+        .logo h1 { font-size: 1.4rem; color: #63b3ed; font-weight: 700; }
+        .logo p { font-size: 0.75rem; color: #7a90a8; margin-top: 4px; }
+        
+        .nav-section { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.05); }
+        .nav-section:first-of-type { border-top: none; }
+        .nav-label { font-size: 0.7rem; color: #4a6080; text-transform: uppercase; 
+                     letter-spacing: 0.1em; padding: 0.5rem 1.5rem; font-weight: 600; }
+        
+        .nav-item {
+            padding: 0.75rem 1.5rem; cursor: pointer; transition: all 0.2s;
+            color: #a0aec0; font-size: 0.95rem;
+        }
+        .nav-item:hover { background: rgba(99,179,237,0.1); color: #90cdf4; }
+        .nav-item.active { background: rgba(99,179,237,0.2); color: #63b3ed; font-weight: 600; 
+                          border-left: 3px solid #63b3ed; }
+        
+        .user-info {
+            position: absolute; bottom: 20px; left: 0; right: 0; width: 100%;
+            padding: 0 1.5rem;
+        }
+        .user-badge {
+            background: rgba(99,179,237,0.1); border: 1px solid rgba(99,179,237,0.2);
+            border-radius: 10px; padding: 0.75rem; font-size: 0.8rem;
+        }
+        .user-name { font-weight: 600; color: #90cdf4; }
+        .user-email { color: #718096; font-size: 0.75rem; margin-top: 2px; }
+        .logout-btn {
+            width: 100%; margin-top: 0.75rem; padding: 0.6rem;
+            background: rgba(245,101,101,0.15); color: #fc8181; border: 1px solid rgba(245,101,101,0.3);
+            border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover { background: rgba(245,101,101,0.25); }
+        
+        /* Main content area */
+        .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        
+        .page-header { margin-bottom: 2rem; }
+        .page-title { font-size: 1.8rem; font-weight: 700; color: #e8f4fd; margin-bottom: 0.5rem; }
+        .page-desc { font-size: 0.95rem; color: #90aecb; }
+        
+        /* Cards */
+        .card {
+            background: #0d1a30; border: 1px solid rgba(99,179,237,0.18);
+            border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+        
+        .card-title { font-size: 1.1rem; font-weight: 600; color: #e2eaf6; margin-bottom: 1rem; }
+
+        /* Action group for per-item controls */
+        .action-group { display: flex; gap: 0.5rem; align-items: center; }
+
+        .result-card { background: linear-gradient(180deg, rgba(13,26,48,0.6), rgba(13,26,48,0.45)); padding: 1rem; border-radius: 10px; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: #c5cfe0; 
+                margin-bottom: 0.5rem; }
+        input, textarea, select {
+            width: 100%; padding: 0.75rem; background: #0f1b35; border: 1px solid rgba(99,179,237,0.18);
+            border-radius: 8px; color: #e2eaf6; font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: rgba(99,179,237,0.5);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;
+            border: none; cursor: pointer; transition: all 0.2s; font-size: 0.95rem;
+        }
+        .btn-primary { background: linear-gradient(135deg, #2b6cb0, #3182ce); color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #3182ce, #4299e1); 
+                            transform: translateY(-1px); box-shadow: 0 4px 12px rgba(49,130,206,0.4); }
+        .btn-secondary { background: rgba(99,179,237,0.2); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
+        .btn-secondary:hover { background: rgba(99,179,237,0.3); }
+        .btn-danger { background: rgba(245,101,101,0.15); color: #fc8181; border: 1px solid rgba(245,101,101,0.3); }
+        .btn-danger:hover { background: rgba(245,101,101,0.25); }
+        .btn-small { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        
+        /* Status badges */
+        .badge {
+            display: inline-block; padding: 0.4rem 0.8rem; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .badge-open { background: rgba(72,187,120,0.15); color: #48bb78; }
+        .badge-forthcoming { background: rgba(237,137,54,0.15); color: #ed8936; }
+        .badge-closed { background: rgba(160,174,192,0.15); color: #a0aec0; }
+        
+        /* Alerts */
+        .alert {
+            padding: 1rem; border-radius: 8px; margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+        .alert-error { background: rgba(245,101,101,0.1); border-left-color: #fc8181; 
+                      color: #fc8181; }
+        .alert-success { background: rgba(72,187,120,0.1); border-left-color: #48bb78; 
+                        color: #48bb78; }
+        .alert-info { background: rgba(99,179,237,0.1); border-left-color: #63b3ed; 
+                     color: #63b3ed; }
+        
+        .hidden { display: none; }
+
+        /* Modal for generated ideas */
+        .modal {
+            position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); z-index: 1200; padding: 1rem;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: var(--card); border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh;
+            padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            overflow-y: auto; min-width: 300px; position: relative;
+        }
+        .modal-close { position: absolute; top: 1.5rem; right: 1.5rem; background: transparent; border: none; color: var(--muted); 
+                      font-weight: 700; cursor: pointer; font-size: 1.5rem; width: 2rem; height: 2rem; display: flex; 
+                      align-items: center; justify-content: center; }
+        .modal-close:hover { color: #e2eaf6; }
+        
+        /* Loading spinner */
+        .spinner {
+            display: inline-block; width: 40px; height: 40px;
+            border: 4px solid rgba(99,179,237,0.2);
+            border-top-color: #63b3ed;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 0.75rem; border-bottom: 2px solid rgba(99,179,237,0.2);
+             font-weight: 600; color: #90cdf4; font-size: 0.85rem; }
+        td { padding: 0.75rem; border-bottom: 1px solid rgba(99,179,237,0.05); }
+        tbody tr:hover { background: rgba(99,179,237,0.05); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar (hidden initially, shown after auth) -->
+        <aside class="sidebar" id="sidebar" style="display: none;">
+            <div class="logo">
+                <h1>🔭 Horizon</h1>
+                <p>EU Funding Intelligence</p>
+            </div>
+            
+            <nav>
+                <div class="nav-section">
+                    <div class="nav-label">Navigation</div>
+                    <div class="nav-item active" data-page="dashboard" onclick="changePage('dashboard')">📊 Dashboard</div>
+                    <div class="nav-item" data-page="discover" onclick="changePage('discover')">🔍 Discover Calls</div>
+                    <div class="nav-item" data-page="shortlist" onclick="changePage('shortlist')">⭐ Shortlist</div>
+                    <div class="nav-item" data-page="recommendations" onclick="changePage('recommendations')">🤖 Recommendations</div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Ideas & Content</div>
+                    <div class="nav-item" data-page="contributions" onclick="changePage('contributions')">💡 Contribution Ideas</div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Settings</div>
+                    <div class="nav-item" data-page="profile" onclick="changePage('profile')">👤 My Profile</div>
+                    <div class="nav-item" data-page="upload" onclick="changePage('upload')">📤 Upload PDF</div>
+                </div>
+            </nav>
+            
+            <div class="user-info">
+                <div class="user-badge">
+                    <div class="user-name" id="user-name">—</div>
+                    <div class="user-email" id="user-email">—</div>
+                </div>
+                <button class="logout-btn" onclick="logout()">Sign Out</button>
+            </div>
+        </aside>
+        
+        <!-- Main content -->
+        <main class="main-content" id="main-content">
+            <!-- Auth page (inlined) -->
+            <div id="auth-page">
+                <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            background: linear-gradient(135deg, #0f1723 0%, #1a2d5a 100%);
+                            color: #e2eaf6; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+                    <div style="max-width: 420px; width: 100%; padding: 2rem;">
+                        <div style="background: rgba(13, 26, 48, 0.8); backdrop-filter: blur(10px);
+                                    border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 16px;
+                                    padding: 2.5rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);">
+                            
+                            <div style="text-align: center; margin-bottom: 1.5rem;">
+                                <h1 style="font-size: 2rem; color: #63b3ed; font-weight: 700;">🔭</h1>
+                                <p style="font-size: 0.85rem; color: #7a90a8; margin-top: 0.5rem;">Horizon Finder</p>
+                            </div>
+                            
+                            <div style="display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(99,179,237,0.1);">
+                                <button class="tab-btn active" id="signin-tab" onclick="switchAuthTab('signin')" 
+                                        style="flex: 1; padding: 1rem; background: none; border: none; color: #7a90a8;
+                                               font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: all 0.2s;
+                                               color: #63b3ed; border-bottom: 2px solid #63b3ed; margin-bottom: -1px;">Sign In</button>
+                                <button class="tab-btn" id="signup-tab" onclick="switchAuthTab('signup')" 
+                                        style="flex: 1; padding: 1rem; background: none; border: none; color: #7a90a8;
+                                               font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: all 0.2s;">Sign Up</button>
+                            </div>
+                            
+                            <div id="auth-alerts"></div>
+                            
+                            <!-- Sign In -->
+                            <div id="signin-form">
+                                <h2 style="font-size: 1.3rem; font-weight: 700; color: #e8f4fd; text-align: center; margin-bottom: 0.3rem;">Welcome Back</h2>
+                                <p style="text-align: center; color: #7a90a8; font-size: 0.85rem; margin-bottom: 1.5rem;">Sign in to your account to continue</p>
+                                
+                                <form onsubmit="handleSignIn(event)" style="width: 100%;">
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Email Address</label>
+                                        <input type="email" id="signin-email" placeholder="your@email.com" required
+                                               style="width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+                                                      border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+                                                      color: #e2eaf6; font-family: inherit; font-size: 0.95rem;">
+                                    </div>
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Password</label>
+                                        <input type="password" id="signin-password" placeholder="••••••••" required
+                                               style="width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+                                                      border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+                                                      color: #e2eaf6; font-family: inherit; font-size: 0.95rem;">
+                                    </div>
+                                    <button type="submit" style="width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #2b6cb0, #3182ce);
+                                                                color: white; border: none; border-radius: 8px; font-weight: 600;
+                                                                font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">Sign In</button>
+                                </form>
+                            </div>
+                            
+                            <!-- Sign Up -->
+                            <div id="signup-form" style="display: none;">
+                                <h2 style="font-size: 1.3rem; font-weight: 700; color: #e8f4fd; text-align: center; margin-bottom: 0.3rem;">Create Account</h2>
+                                <p style="text-align: center; color: #7a90a8; font-size: 0.85rem; margin-bottom: 1.5rem;">Get started with EU funding opportunities</p>
+                                
+                                <form onsubmit="handleSignUp(event)" style="width: 100%;">
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Full Name</label>
+                                        <input type="text" id="signup-name" placeholder="John Doe" required
+                                               style="width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+                                                      border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+                                                      color: #e2eaf6; font-family: inherit; font-size: 0.95rem;">
+                                    </div>
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Email Address</label>
+                                        <input type="email" id="signup-email" placeholder="your@email.com" required
+                                               style="width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+                                                      border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+                                                      color: #e2eaf6; font-family: inherit; font-size: 0.95rem;">
+                                    </div>
+                                    <div style="margin-bottom: 1.25rem;">
+                                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Password</label>
+                                        <input type="password" id="signup-password" placeholder="••••••••" required minlength="6"
+                                               style="width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+                                                      border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+                                                      color: #e2eaf6; font-family: inherit; font-size: 0.95rem;">
+                                    </div>
+                                    <button type="submit" style="width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #2b6cb0, #3182ce);
+                                                                color: white; border: none; border-radius: 8px; font-weight: 600;
+                                                                font-size: 0.95rem; cursor: pointer; transition: all 0.2s;">Create Account</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- App content (shown after auth) -->
+            <div id="app-content" style="display: none;">
+                <div class="page-container" id="page-content"></div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let currentPage = 'dashboard';
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, checking auth...');
+            checkAuth();
+        });
+        
+        function checkAuth() {
+            console.log('Checking authentication...');
+            fetch('/api/auth/me')
+                .then(async r => {
+                    console.log('Auth response:', r.status);
+                    if (r.status === 401) {
+                        console.log('Not authenticated, showing auth page');
+                        showAuthPage();
+                    } else {
+                        const data = await r.json();
+                        if (data.authenticated) {
+                            console.log('Authenticated, loading app');
+                            showUserInfo(data.user);
+                            loadApp();
+                        } else {
+                            console.log('Auth check failed, showing auth page');
+                            showAuthPage();
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Auth error:', err);
+                    showAuthPage();
+                });
+        }
+        
+        function showAuthPage() {
+            console.log('Showing auth page');
+            const authPage = document.getElementById('auth-page');
+            const main = document.getElementById('main-content');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (authPage) authPage.style.display = 'block';
+            if (main) main.style.background = 'none';
+            if (sidebar) sidebar.style.display = 'none';
+        }
+        
+        function loadApp() {
+            console.log('Loading app');
+            const authPage = document.getElementById('auth-page');
+            const sidebar = document.getElementById('sidebar');
+            const appContent = document.getElementById('app-content');
+            
+            if (sidebar) sidebar.style.display = 'block';
+            if (authPage) authPage.style.display = 'none';
+            if (appContent) appContent.style.display = 'block';
+            
+            // Load the default dashboard page
+            changePage('dashboard');
+        }
+        
+        function showUserInfo(user) {
+            console.log('Showing user:', user);
+            const userName = document.getElementById('user-name');
+            const userEmail = document.getElementById('user-email');
+            
+            if (userName) userName.textContent = user.name || user.email.split('@')[0];
+            if (userEmail) userEmail.textContent = user.email;
+        }
+        
+        function changePage(pageName) {
+            console.log('Changing to page:', pageName);
+            currentPage = pageName;
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === pageName) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Fetch and load the page content
+            const content = document.getElementById('page-content');
+            content.innerHTML = '<div class="spinner"></div> Loading...';
+            
+            fetch(`/api/page/${pageName}`)
+                .then(r => r.json())
+                .then(data => {
+                    content.innerHTML = data.html || '<p>Page not found</p>';
+                    // Format dates after content is loaded
+                    setTimeout(() => formatAllDates(), 100);
+                    // Load contributions list if on contributions page
+                    if (pageName === 'contributions') {
+                        setTimeout(() => loadContributionsList(), 100);
+                    }
+                })
+                .catch(err => {
+                    content.innerHTML = `<div class="alert alert-error">Error: ${err.message}</div>`;
+                });
+        }
+        
+        function switchAuthTab(tab) {
+            if (tab === 'signin') {
+                document.getElementById('signin-form').style.display = 'block';
+                document.getElementById('signup-form').style.display = 'none';
+                document.getElementById('signin-tab').style.color = '#63b3ed';
+                document.getElementById('signin-tab').style.borderBottom = '2px solid #63b3ed';
+                document.getElementById('signup-tab').style.color = '#7a90a8';
+                document.getElementById('signup-tab').style.borderBottom = 'none';
+            } else {
+                document.getElementById('signin-form').style.display = 'none';
+                document.getElementById('signup-form').style.display = 'block';
+                document.getElementById('signin-tab').style.color = '#7a90a8';
+                document.getElementById('signin-tab').style.borderBottom = 'none';
+                document.getElementById('signup-tab').style.color = '#63b3ed';
+                document.getElementById('signup-tab').style.borderBottom = '2px solid #63b3ed';
+            }
+        }
+        
+        function showAuthAlert(message, type = 'error') {
+            const alertBox = document.createElement('div');
+            alertBox.style.cssText = `padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;
+                                     border-left: 4px solid; font-size: 0.9rem;`;
+            
+            if (type === 'error') {
+                alertBox.style.cssText += `background: rgba(245, 101, 101, 0.1); border-left-color: #fc8181; color: #fc8181;`;
+            } else if (type === 'success') {
+                alertBox.style.cssText += `background: rgba(72, 187, 120, 0.1); border-left-color: #48bb78; color: #48bb78;`;
+            }
+            
+            alertBox.textContent = message;
+            document.getElementById('auth-alerts').appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 5000);
+        }
+        
+        function handleSignIn(e) {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            
+            console.log('Attempting sign in with:', email);
+            
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+            .then(r => {
+                console.log('Sign in response status:', r.status);
+                if (!r.ok) {
+                    return r.json().then(data => {
+                        throw new Error(data.error || 'Login failed');
+                    });
+                }
+                return r.json();
+            })
+            .then(data => {
+                console.log('Sign in successful');
+                window.location.href = '/';
+            })
+            .catch(err => {
+                console.error('Sign in error:', err);
+                showAuthAlert(err.message, 'error');
+            });
+        }
+        
+        function handleSignUp(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            console.log('Attempting sign up with:', email, name);
+            
+            fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, password })
+            })
+            .then(r => {
+                console.log('Sign up response status:', r.status);
+                if (!r.ok) {
+                    return r.json().then(data => {
+                        throw new Error(data.error || 'Signup failed');
+                    });
+                }
+                return r.json();
+            })
+            .then(data => {
+                console.log('Sign up successful');
+                showAuthAlert('Account created! Signing you in...', 'success');
+                setTimeout(() => {
+                    document.getElementById('signup-email').value = email;
+                    document.getElementById('signin-password').value = password;
+                    switchAuthTab('signin');
+                    handleSignIn({ preventDefault: () => {} });
+                }, 2000);
+            })
+            .catch(err => {
+                console.error('Sign up error:', err);
+                showAuthAlert(err.message, 'error');
+            });
+        }
+        
+        // Global form submission handler
+        document.addEventListener('submit', (e) => {
+            const form = e.target;
+            
+            // Profile save form
+            if (form.id === 'profile-form') {
+                e.preventDefault();
+                
+                const profileData = {
+                    org_name: document.getElementById('profile-org-name')?.value || '',
+                    org_type: document.getElementById('profile-org-type')?.value || '',
+                    competencies: document.getElementById('profile-competencies')?.value || '',
+                    past_experiences: document.getElementById('profile-experiences')?.value || '',
+                    technical_expertise: document.getElementById('profile-expertise')?.value || '',
+                    partnerships: document.getElementById('profile-partnerships')?.value || ''
+                };
+                
+                // Validate that at least some data is provided
+                const hasData = Object.values(profileData).some(v => v.trim() !== '');
+                if (!hasData) {
+                    showPageAlert('Please fill in at least one field', 'error');
+                    return;
+                }
+                
+                fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile: JSON.stringify(profileData) })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showPageAlert('Profile updated successfully!', 'success');
+                    } else {
+                        showPageAlert('Error: ' + data.error, 'error');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+            }
+        });
+        
+        // Global file input and drag-drop handler
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('pdf-input') && e.target.id === 'pdf-input') {
+                handlePDFUpload(e.target.files[0]);
+            }
+        });
+        
+        // Drag-drop events for upload zone
+        document.addEventListener('dragover', (e) => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) {
+                e.preventDefault();
+                dropZone.style.background = 'rgba(99,179,237,0.1)';
+            }
+        });
+        
+        document.addEventListener('dragleave', (e) => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone && e.target === dropZone) {
+                dropZone.style.background = '';
+            }
+        });
+        
+        document.addEventListener('drop', (e) => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) {
+                e.preventDefault();
+                dropZone.style.background = '';
+                const files = e.dataTransfer.files;
+                if (files[0]?.type === 'application/pdf') {
+                    handlePDFUpload(files[0]);
+                }
+            }
+        });
+        
+        // Handle drop zone click and data-action clicks
+        document.addEventListener('click', (e) => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone && (e.target === dropZone || dropZone.contains(e.target))) {
+                if (e.target.id !== 'pdf-input') {
+                    document.getElementById('pdf-input')?.click();
+                }
+            }
+
+            // Use a handled flag so fallback handlers don't run after data-action
+            let handled = false;
+
+            // Handle data-action attributes (viewCallDetail, addToShortlist, runScreening, etc)
+            if (e.target.hasAttribute('data-action')) {
+                e.preventDefault();
+                e.stopPropagation();
+                handled = true;
+                const action = e.target.getAttribute('data-action');
+                const topicId = e.target.getAttribute('data-topic-id');
+
+                if (action === 'viewCallDetail' && topicId) {
+                    viewCallDetail(topicId);
+                } else if (action === 'addToShortlist' && topicId) {
+                    addToShortlist(e.target, topicId);
+                } else if (action === 'removeFromShortlist' && topicId) {
+                    removeFromShortlist(e.target, topicId);
+                } else if (action === 'removeFromDiscoverList' && topicId) {
+                    removeFromDiscoverList(e.target, topicId);
+                } else if (action === 'clearAllShortlist') {
+                    clearAllShortlist();
+                } else if (action === 'clearAllDiscoverCalls') {
+                    clearAllDiscoverCalls();
+                } else if (action === 'runScreening') {
+                    runScreening();
+                } else if (action === 'generateContribution' && topicId) {
+                    generateContribution(topicId, e.target);
+                } else if (action === 'viewContribution' && topicId) {
+                    viewContribution(topicId);
+                }
+            }
+
+            // Fallback shortlist click handler (only run if not already handled)
+            if (!handled && e.target.classList.contains('btn') && e.target.textContent.includes('Shortlist')) {
+                e.preventDefault();
+                const button = e.target;
+
+                // Find the topic ID from the parent container
+                let container = button.parentElement;
+                while (container && !container.querySelector('[style*="monospace"]')) {
+                    container = container.parentElement;
+                }
+
+                const topicIdDiv = container?.querySelector('[style*="monospace"]');
+                const topicId = topicIdDiv?.textContent?.trim();
+
+                if (topicId) {
+                    addToShortlist(button, topicId);
+                }
+            }
+        });
+        
+        function handlePDFUpload(file) {
+            if (!file || file.type !== 'application/pdf') {
+                showPageAlert('Please select a PDF file', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const statusDiv = document.getElementById('upload-status');
+            if (statusDiv) {
+                statusDiv.innerHTML = '<div class="spinner"></div> Processing PDF...';
+            }
+            
+            fetch('/api/upload/extract-topics', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('upload-status').innerHTML = '';
+                    showPageAlert(`Found ${data.found.length} topic IDs. ${data.new.length} are new. Fetching call details...`, 'success');
+                    
+                    return fetch('/api/upload/fetch-calls', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ topics: data.new })
+                    });
+                } else {
+                    throw new Error(data.error);
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('upload-status').innerHTML = '';
+                showPageAlert(`Successfully saved ${data.saved} calls!${data.failed > 0 ? ` (${data.failed} failed)` : ''}`, 'success');
+            })
+            .catch(err => {
+                document.getElementById('upload-status').innerHTML = '';
+                showPageAlert('Error: ' + err.message, 'error');
+            });
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            try {
+                // Handle various date formats
+                const date = new Date(dateStr);
+                if (isNaN(date)) return dateStr;
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+        
+        function showPageAlert(message, type = 'error') {
+            // Try to find existing alerts container
+            let container = document.getElementById('upload-status');
+            if (!container) {
+                container = document.getElementById('main-content');
+            }
+            
+            if (!container) return;
+            
+            const alertBox = document.createElement('div');
+            alertBox.className = `alert alert-${type}`;
+            alertBox.style.cssText = `padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;
+                                     border-left: 4px solid; font-size: 0.9rem; display:flex; justify-content:space-between; align-items:center; gap:0.5rem;`;
+
+            const text = document.createElement('div');
+            text.textContent = message;
+            alertBox.appendChild(text);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = 'background:transparent;border:none;color:var(--muted);font-weight:700;cursor:pointer;';
+            closeBtn.onclick = () => alertBox.remove();
+            alertBox.appendChild(closeBtn);
+            
+            if (type === 'error') {
+                alertBox.style.cssText += `background: rgba(245, 101, 101, 0.1); border-left-color: #fc8181; color: #fc8181;`;
+            } else if (type === 'success') {
+                alertBox.style.cssText += `background: rgba(72, 187, 120, 0.1); border-left-color: #48bb78; color: #48bb78;`;
+            }
+            
+            // Insert at the beginning of the container
+            if (container.firstChild) {
+                container.insertBefore(alertBox, container.firstChild);
+            } else {
+                container.appendChild(alertBox);
+            }
+            
+            setTimeout(() => { try { alertBox.remove(); } catch(e){} }, 7000);
+        }
+        
+        function viewCallDetail(topicId) {
+            fetch(`/api/calls/${topicId}`)
+                .then(r => r.json())
+                .then(data => {
+                    const call = data.call || data;
+                    let detailHtml = '<div class="card" style="margin-top: 1rem;"><h3>Call Details</h3>';
+                    detailHtml += `<p><strong>Topic ID:</strong> ${call.topic_id}</p>`;
+                    detailHtml += `<p><strong>Title:</strong> ${call.title}</p>`;
+                    detailHtml += `<p><strong>Status:</strong> ${call.status}</p>`;
+                    detailHtml += `<p><strong>Deadline:</strong> <span class="formatted-date">${call.deadline}</span></p>`;
+                    detailHtml += `<p><strong>Opening Date:</strong> <span class="formatted-date">${call.opening_date || 'N/A'}</span></p>`;
+                    detailHtml += `<p><strong>Type of Action:</strong> ${call.type_of_action || 'N/A'}</p>`;
+                    detailHtml += `<p><strong>Description:</strong></p><p>${call.call_description || call.summary || 'No description available'}</p>`;
+                    if (call.url) {
+                        detailHtml += `<a href="${call.url}" target="_blank" class="btn btn-primary">View on EC Portal</a>`;
+                    }
+                    detailHtml += '</div>';
+                    document.getElementById('main-content').insertAdjacentHTML('beforeend', detailHtml);
+                    // Format any date fields that were just added
+                    setTimeout(() => formatAllDates(), 100);
+                })
+                .catch(err => showPageAlert('Error loading call details: ' + err.message, 'error'));
+        }
+        
+        function addToShortlist(button, topicId) {
+            // Prevent double clicks immediately
+            if (button) {
+                button.disabled = true;
+                button.style.opacity = '0.6';
+            }
+
+            fetch(`/api/shortlist/${topicId}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showPageAlert('✓ Added to shortlist!', 'success');
+                        if (button) {
+                            button.textContent = '✓ In Shortlist';
+                        }
+                    } else {
+                        // Re-enable on failure
+                        if (button) {
+                            button.disabled = false;
+                            button.style.opacity = '';
+                        }
+                        throw new Error(data.error || 'Failed to add to shortlist');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+        }
+        
+        function runScreening() {
+            const statusDiv = document.getElementById('recommendations-status');
+            if (!statusDiv) {
+                showPageAlert('Status div not found', 'error');
+                return;
+            }
+            
+            // Get filter values if they exist
+            const clusterInput = document.getElementById('rec-cluster-filter');
+            const deadlineAfterInput = document.getElementById('rec-deadline-after');
+            const deadlineBeforeInput = document.getElementById('rec-deadline-before');
+            
+            const cluster = clusterInput ? clusterInput.value : '';
+            const deadlineAfter = deadlineAfterInput ? deadlineAfterInput.value : '';
+            const deadlineBefore = deadlineBeforeInput ? deadlineBeforeInput.value : '';
+            
+            // Disable the run button while running
+            const runBtn = document.querySelector('[data-action="runScreening"]') || document.getElementById('run-screening-btn');
+            if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = '0.7'; }
+            statusDiv.innerHTML = '<div class="spinner"></div> Running AI screening (this may take a minute)...';
+            
+            const payload = { top_n: 10 };
+            if (cluster) payload.clusters = [cluster];
+            if (deadlineAfter) payload.deadline_after = deadlineAfter;
+            if (deadlineBefore) payload.deadline_before = deadlineBefore;
+            
+            fetch('/api/recommendations/screen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const calls = data.selected || [];
+                    if (calls.length === 0) {
+                        statusDiv.innerHTML = '<div class="alert alert-info">AI screening complete — no calls selected.</div>';
+                        return;
+                    }
+
+                    // Build results list
+                    let html = `<div class="card"><h3>AI Screening Results (${calls.length})</h3>`;
+                    html += '<div style="display: grid; gap: 0.75rem; margin-top: 0.75rem;">';
+                    calls.forEach(c => {
+                        html += `<div style="padding:0.75rem; border:1px solid rgba(99,179,237,0.06); border-radius:8px; display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div style="flex:1;">
+                                <div style="font-size:0.75rem; color:#63b3ed; font-family:monospace; font-weight:600;">${c.topic_id}</div>
+                                <div style="font-weight:700; margin-top:0.25rem;">${c.title || 'Untitled'}</div>
+                                <div style="color:#90aecb; margin-top:0.25rem;">${c.summary ? c.summary.substring(0, 240) + (c.summary.length>240? '...':'') : ''}</div>
+                                ${c.cluster ? `<div style="font-size:0.75rem; color:#7a90a8; margin-top:0.25rem;">📍 ${c.cluster}</div>` : ''}
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:0.5rem; margin-left:1rem;">
+                                <button class="btn btn-secondary btn-small" data-action="addToShortlist" data-topic-id="${c.topic_id}">+ Shortlist</button>
+                                <button class="btn btn-secondary btn-small" data-action="viewCallDetail" data-topic-id="${c.topic_id}">View</button>
+                                <button class="btn btn-primary btn-small" data-action="generateContribution" data-topic-id="${c.topic_id}">Generate Contribution</button>
+                                ${c.has_idea ? `<button class="btn btn-secondary btn-small" data-action="viewContribution" data-topic-id="${c.topic_id}">View Idea</button>` : ''}
+                            </div>
+                        </div>`;
+                    });
+                    html += '</div></div>';
+
+                    statusDiv.innerHTML = html;
+                    // Format dates if any
+                    setTimeout(() => formatAllDates(), 100);
+                    // Re-enable run button
+                    if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ''; }
+                } else {
+                    throw new Error(data.error || 'Screening failed');
+                }
+            })
+            .catch(err => {
+                statusDiv.innerHTML = `<div class="alert alert-error">Error: ${err.message}</div>`;
+                const runBtn = document.querySelector('[data-action="runScreening"]');
+                if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ''; }
+            });
+        }
+
+        function viewContribution(topicId) {
+            fetch(`/api/calls/${topicId}/contribution`, { method: 'GET' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = document.getElementById('hf-modal');
+                        const content = document.getElementById('hf-modal-content');
+                        content.innerHTML = `<button id="hf-modal-close" class="modal-close">✕</button><div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;"><h3 style="margin:0;">Saved Contribution Idea</h3><div style="display:flex; gap:0.5rem;"><button class="btn btn-secondary" id="hf-idea-copy">Copy</button><button class="btn btn-primary" id="hf-idea-download">Download</button></div></div><div id="hf-idea-text" style="color:var(--muted); white-space:pre-wrap; line-height:1.8; max-height:60vh; overflow-y:auto;">${data.idea}</div>`;
+                        modal.style.display = 'flex';
+
+                        document.getElementById('hf-idea-copy').onclick = () => {
+                            navigator.clipboard.writeText(data.idea).then(() => showPageAlert('Idea copied to clipboard', 'success'));
+                        };
+
+                        document.getElementById('hf-idea-download').onclick = () => {
+                            const el = document.createElement('a');
+                            el.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(data.idea);
+                            el.download = `contribution-${topicId}.txt`;
+                            el.click();
+                            showPageAlert('Idea downloaded', 'success');
+                        };
+                    } else {
+                        showPageAlert('Error: ' + (data.error || 'Failed to load idea'), 'error');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+        }
+
+        function generateContribution(topicId, triggerEl) {
+            const btn = triggerEl || null;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Generating...';
+            }
+
+            fetch(`/api/calls/${topicId}/contribution`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Populate and show modal with the idea
+                        const modal = document.getElementById('hf-modal');
+                        const content = document.getElementById('hf-modal-content');
+                        content.innerHTML = `<button id="hf-modal-close" class="modal-close">✕</button><div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;"><h3 style="margin:0;">Generated Contribution Idea</h3><div style="display:flex; gap:0.5rem;"><button id="hf-modal-copy" class="btn btn-secondary">Copy</button><button id="hf-modal-save" class="btn btn-primary">Save Idea</button></div></div><div id="hf-idea-text" style="color:var(--muted); white-space:pre-wrap; line-height:1.8; max-height:60vh; overflow-y:auto;">${data.idea}</div>`;
+                        modal.style.display = 'flex';
+
+                        // Copy button
+                        document.getElementById('hf-modal-copy').onclick = () => {
+                            navigator.clipboard.writeText(data.idea).then(() => showPageAlert('Idea copied to clipboard', 'success'));
+                        };
+
+                        // Save button
+                        document.getElementById('hf-modal-save').onclick = () => {
+                            const ideaText = document.getElementById('hf-idea-text').textContent || '';
+                            fetch(`/api/calls/${topicId}/contribution/save`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ idea: ideaText })
+                            })
+                            .then(r => r.json())
+                            .then(resp => {
+                                if (resp.success) {
+                                    showPageAlert('Idea saved', 'success');
+                                    // update shortlist badge if present
+                                    const el = document.querySelector(`[data-topic-id="${topicId}"]`);
+                                    if (el) {
+                                        const row = el.closest('tr') || el.closest('[style*="border-bottom"]');
+                                        if (row && !row.querySelector('.idea-badge')) {
+                                            const badge = document.createElement('span');
+                                            badge.className = 'idea-badge';
+                                            badge.style.cssText = 'margin-left:0.5rem; padding:0.15rem 0.5rem; border-radius:6px; font-size:0.75rem; background:rgba(72,187,120,0.12); color:var(--success); font-weight:700;';
+                                            badge.textContent = 'Idea saved';
+                                            el.parentElement.appendChild(badge);
+                                        }
+                                    }
+                                } else {
+                                    throw new Error(resp.error || 'Save failed');
+                                }
+                            })
+                            .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+                        };
+                    } else {
+                        throw new Error(data.error || 'Failed to generate idea');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'))
+                .finally(() => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = 'Generate Contribution';
+                    }
+                });
+        }
+        
+        function removeFromShortlist(button, topicId) {
+            if (!confirm('Remove from shortlist?')) return;
+            
+            fetch(`/api/shortlist/${topicId}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showPageAlert('Removed from shortlist', 'success');
+                        button.closest('tr')?.remove();
+                    } else {
+                        throw new Error(data.error || 'Failed to remove');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+        }
+        
+        function removeFromDiscoverList(button, topicId) {
+            if (!confirm('Remove from list?')) return;
+            
+            // Just hide the item from view (not deleting from DB)
+            button.closest('[style*="border-bottom"]')?.remove();
+            showPageAlert('Item removed from view', 'success');
+        }
+        
+        function clearAllShortlist() {
+            if (!confirm('Remove all calls from shortlist?')) return;
+            
+            fetch('/api/shortlist/clear/all', { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showPageAlert('Shortlist cleared', 'success');
+                        changePage('shortlist'); // Reload the page
+                    } else {
+                        throw new Error(data.error || 'Failed to clear');
+                    }
+                })
+                .catch(err => showPageAlert('Error: ' + err.message, 'error'));
+        }
+        
+        function clearAllDiscoverCalls() {
+            if (!confirm('Remove all items from list?')) return;
+            
+            // Clear the calls list DOM
+            const callsList = document.getElementById('calls-list');
+            if (callsList) {
+                callsList.innerHTML = '<p style="color: #7a90a8; text-align: center; padding: 2rem;">List cleared. Reload the page to restore.</p>';
+            }
+            showPageAlert('List cleared', 'success');
+        }
+
+        function loadContributionsList() {
+            fetch('/api/contributions/list')
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('contributions-list');
+                    if (!container) return;
+                    
+                    if (!data.success || !data.ideas || data.ideas.length === 0) {
+                        container.innerHTML = '<p style="color: #7a90a8; text-align: center; padding: 2rem;">No contribution ideas yet. Generate ideas from calls to get started!</p>';
+                        return;
+                    }
+                    
+                    let html = `<div style="color: #90aecb; margin-bottom: 1rem;">You have ${data.count} contribution idea${data.count > 1 ? 's' : ''}.</div>`;
+                    html += '<div style="display: grid; gap: 1rem;">';
+                    
+                    data.ideas.forEach(idea => {
+                        html += `<div style="padding: 1rem; background: rgba(99,179,237,0.06); border-radius: 8px; border-left: 3px solid #63b3ed;">
+                            <div style="font-weight: 600; color: #e2eaf6; cursor: pointer;" 
+                                 onclick="fetch(\`/api/calls/${idea.topic_id}/contribution?method=GET\`).then(r=>r.json()).then(d=>{if(d.success){showModalWithIdea(d.idea, '${idea.topic_id}')}})">
+                                ${idea.call_title}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #7a90a8; margin-top: 0.25rem;">
+                                ${idea.cluster ? `📍 Cluster: ${idea.cluster} | ` : ''}Created: ${new Date(idea.created_at).toLocaleDateString()}
+                            </div>
+                            <div style="margin-top: 0.75rem; color: #90aecb; font-size: 0.9rem;">${idea.idea_text}</div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                                <button class="btn btn-secondary btn-small" onclick="navigator.clipboard.writeText('${idea.idea_text.replace(/'/g, "\\'")}').then(()=>showPageAlert('Copied!','success'))">Copy</button>
+                                <button class="btn btn-danger btn-small" onclick="deleteContribution('${idea.topic_id}')">Delete</button>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                })
+                .catch(err => {
+                    const container = document.getElementById('contributions-list');
+                    if (container) {
+                        container.innerHTML = `<div class="alert alert-error">Error loading ideas: ${err.message}</div>`;
+                    }
+                });
+        }
+
+        function showModalWithIdea(idea, topicId) {
+            const modal = document.getElementById('hf-modal');
+            const content = document.getElementById('hf-modal-content');
+            content.innerHTML = `<button id="hf-modal-close" class="modal-close">✕</button><div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;"><h3 style="margin:0;">Contribution Idea</h3><div style="display:flex; gap:0.5rem;"><button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${idea.replace(/'/g, "\\'")}').then(()=>showPageAlert('Copied!','success'))">Copy</button></div></div><div id="hf-idea-text" style="color:var(--muted); white-space:pre-wrap; line-height:1.8; max-height:60vh; overflow-y:auto;">${idea}</div>`;
+            modal.style.display = 'flex';
+        }
+
+        function deleteContribution(topicId) {
+            if (!confirm('Delete this contribution idea?')) return;
+            // For now, we'll just remove it from view (no DELETE endpoint yet)
+            showPageAlert('Deletion not yet implemented. Please contact support.', 'info');
+        }
+        
+        function formatAllDates() {
+            document.querySelectorAll('.formatted-date').forEach(el => {
+                if (el.textContent.trim() !== 'N/A') {
+                    el.textContent = formatDate(el.textContent.trim());
+                }
+            });
+        }
+        
+        function logout() {
+            if (confirm('Sign out?')) {
+                fetch('/api/auth/logout', { method: 'POST' })
+                    .then(() => {
+                        window.location.href = '/';
+                    });
+            }
+        }
+        
+        // Modal close handler
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('hf-modal');
+            if (!modal) return;
+            if (e.target === modal || e.target.id === 'hf-modal-close') {
+                modal.style.display = 'none';
+                document.getElementById('hf-modal-content').innerHTML = '';
+            }
+        });
+    </script>
+    <!-- Modal for generated contribution ideas -->
+    <div id="hf-modal" class="modal" style="display:none;">
+        <div class="modal-content" id="hf-modal-content">
+            <button id="hf-modal-close" class="modal-close">✕</button>
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+</body>
+</html>

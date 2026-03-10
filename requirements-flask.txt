@@ -1,0 +1,23 @@
+# Flask Web Application
+Flask==3.0.0
+Flask-CORS==4.0.0
+Werkzeug==3.0.1
+
+# Database & ORM
+sqlite3  # Built-in with Python
+
+# Data Processing
+pandas==2.1.4
+numpy==1.24.4
+
+# PDF Processing
+pdfplumber==0.10.3
+
+# API & HTTP
+requests==2.31.0
+
+# LLM Integration
+groq==0.4.2
+
+# Utilities
+python-dotenv==1.0.0

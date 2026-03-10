@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horizon Finder - Authentication</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1723 0%, #1a2d5a 100%);
+            color: #e2eaf6;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        }
+        
+        .auth-container { max-width: 420px; width: 100%; padding: 2rem; }
+        
+        .auth-card {
+            background: rgba(13, 26, 48, 0.8); backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 16px;
+            padding: 2.5rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+        .auth-logo h1 { font-size: 2rem; color: #63b3ed; font-weight: 700; }
+        .auth-logo p { font-size: 0.85rem; color: #7a90a8; margin-top: 0.5rem; }
+        
+        .auth-title { font-size: 1.3rem; font-weight: 700; color: #e8f4fd; 
+                     text-align: center; margin-bottom: 0.3rem; }
+        .auth-desc { text-align: center; color: #7a90a8; font-size: 0.85rem; margin-bottom: 1.5rem; }
+        
+        /* Tabs */
+        .auth-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(99,179,237,0.1); }
+        .tab-btn {
+            flex: 1; padding: 1rem; background: none; border: none; color: #7a90a8;
+            font-weight: 600; cursor: pointer; font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #63b3ed; border-bottom: 2px solid #63b3ed;
+            margin-bottom: -1px;
+        }
+        .tab-btn:hover { color: #90cdf4; }
+        
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; 
+               color: #90aecb; margin-bottom: 0.5rem; text-transform: uppercase;
+               letter-spacing: 0.05em; }
+        input {
+            width: 100%; padding: 0.85rem; background: rgba(15, 27, 53, 0.5);
+            border: 1px solid rgba(99, 179, 237, 0.2); border-radius: 8px;
+            color: #e2eaf6; font-family: inherit; font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        input::placeholder { color: #4a6080; }
+        input:focus {
+            outline: none; border-color: rgba(99, 179, 237, 0.5);
+            background: rgba(15, 27, 53, 0.8);
+        }
+        
+        .btn {
+            width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #2b6cb0, #3182ce);
+            color: white; border: none; border-radius: 8px; font-weight: 600;
+            font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+        }
+        .btn:hover {
+            background: linear-gradient(135deg, #3182ce, #4299e1);
+            transform: translateY(-2px);  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.4);
+        }
+        
+        .alert {
+            padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;
+            border-left: 4px solid; font-size: 0.9rem;
+        }
+        .alert-error { background: rgba(245, 101, 101, 0.1); border-left-color: #fc8181; color: #fc8181; }
+        .alert-success { background: rgba(72, 187, 120, 0.1); border-left-color: #48bb78; color: #48bb78; }
+        
+        .auth-link { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #7a90a8; }
+        .auth-link a { color: #63b3ed; text-decoration: none; font-weight: 600; }
+        .auth-link a:hover { text-decoration: underline; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h1>🔭</h1>
+                <p>Horizon Finder</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="switchTab('signin')">Sign In</button>
+                <button class="tab-btn" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+            
+            <div id="alerts"></div>
+            
+            <!-- Sign In Tab -->
+            <div id="signin" class="auth-form">
+                <h2 class="auth-title">Welcome Back</h2>
+                <p class="auth-desc">Sign in to your account to continue</p>
+                
+                <form onsubmit="handleSignIn(event)">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="signin-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signin-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn">Sign In</button>
+                </form>
+            </div>
+            
+            <!-- Sign Up Tab -->
+            <div id="signup" class="auth-form hidden">
+                <h2 class="auth-title">Create Account</h2>
+                <p class="auth-desc">Get started with EU funding opportunities</p>
+                
+                <form onsubmit="handleSignUp(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="signup-name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="signup-email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signup-password" placeholder="••••••••" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-form').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tab).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+        
+        function showAlert(message, type = 'error') {
+            const alertBox = document.createElement('div');
+            alertBox.className = `alert alert-${type}`;
+            alertBox.textContent = message;
+            document.getElementById('alerts').appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 5000);
+        }
+        
+        function handleSignIn(e) {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Login failed');
+                return r.json();
+            })
+            .then(data => {
+                window.location.href = '/dashboard';
+            })
+            .catch(err => showAlert(err.message, 'error'));
+        }
+        
+        function handleSignUp(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            
+            fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, password })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Signup failed');
+                return r.json();
+            })
+            .then(data => {
+                showAlert('Account created! Please sign in.', 'success');
+                setTimeout(() => switchTab('signin'), 2000);
+            })
+            .catch(err => showAlert(err.message, 'error'));
+        }
+    </script>
+</body>
+</html>
