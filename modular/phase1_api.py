@@ -1,5 +1,6 @@
 import json
-from typing import Any, Optional
+import time
+from typing import Any, Optional, List, Dict
 
 import requests
 
@@ -181,3 +182,182 @@ def parse_topic_json(query_key: str, result_item: dict) -> dict[str, str]:
         "programme_period": _flat(programme_period), "url": _flat(url),
         "raw_json": json.dumps(ri, ensure_ascii=False),
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EU FUNDING & TENDERS SEARCH API - AUTOMATIC CALL FETCHING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+GRANTS_ONLY_TYPES = ["1", "2", "8"]  # Exclude tenders (type 0)
+OPEN_STATUS_CODES = ["31094501"]
+
+# Cluster keyword mappings
+CLUSTER_KEYWORDS = {
+    "Digital Industry and Space": [
+        "digital", "ai", "artificial intelligence", "autonomous systems", "space", 
+        "cybersecurity", "blockchain", "metaverse", "computing", "photonics"
+    ],
+    "Health": [
+        "health", "medicine", "disease", "clinical", "biotechnology", "genomics",
+        "pharmaceutical", "vaccine", "cancer", "mental health", "pandemic"
+    ],
+    "Climate and Biodiversity": [
+        "climate", "environment", "biodiversity", "green", "sustainable", "carbon",
+        "net-zero", "renewable", "ocean", "forest", "ecosystem"
+    ],
+    "Energy": [
+        "energy", "renewable", "nuclear", "hydrogen", "grid", "battery", "solar",
+        "wind", "fusion", "power"
+    ],
+    "Mobility": [
+        "mobility", "transport", "autonomous", "vehicle", "aviation", "rail",
+        "shipping", "logistics", "electric", "battery"
+    ],
+    "Food and Agriculture": [
+        "food", "agriculture", "farming", "crop", "livestock", "nutrition",
+        "agritech", "soil", "water"
+    ],
+}
+
+
+def fetch_open_grant_calls(
+    page_size: int = 50,
+    language: Optional[str] = "en",
+    sleep_s: float = 0.1,
+    timeout_s: int = 60,
+) -> List[Dict[str, Any]]:
+    """
+    Fetch ALL open GRANT calls from EU Funding & Tenders Search API.
+    Excludes tenders and non-English content.
+    """
+    API_URL = "https://api.tech.ec.europa.eu/search-api/prod/rest/search"
+    API_KEY = "SEDIA"
+    
+    query = {
+        "bool": {
+            "must": [
+                {"terms": {"type": GRANTS_ONLY_TYPES}},
+                {"terms": {"status": OPEN_STATUS_CODES}},
+            ]
+        }
+    }
+
+    languages = [language] if language else None
+    sort = {"field": "sortStatus", "order": "ASC"}
+
+    page = 1
+    all_results: List[Dict[str, Any]] = []
+
+    while True:
+        params = {
+            "apiKey": API_KEY,
+            "text": "***",
+            "pageSize": str(page_size),
+            "pageNumber": str(page),
+        }
+
+        files = {
+            "query": ("blob", json.dumps(query), "application/json"),
+            "sort": ("blob", json.dumps(sort), "application/json"),
+        }
+        if languages is not None:
+            files["languages"] = ("blob", json.dumps(languages), "application/json")
+
+        try:
+            resp = requests.post(API_URL, params=params, files=files, timeout=timeout_s)
+            if resp.status_code != 200:
+                raise RuntimeError(f"API error: {resp.status_code}")
+
+            data = resp.json()
+            results = data.get("results", [])
+
+            # Filter out Bulgarian content
+            english_results = [r for r in results if _filter_english_only(r)]
+            all_results.extend(english_results)
+
+            print(f"page={page} got={len(english_results)}/{len(results)} total={len(all_results)}")
+
+            if len(results) < page_size:
+                break
+
+            page += 1
+            time.sleep(sleep_s)
+        except Exception as e:
+            print(f"Error fetching page {page}: {e}")
+            break
+
+    return all_results
+
+
+def assign_cluster(title: str, description: str) -> str:
+    """
+    Assign a call to a cluster based on keywords in title and description.
+    Uses keyword matching against known clusters.
+    """
+    text = (title + " " + description).lower()
+    
+    # Score each cluster
+    scores: Dict[str, int] = {}
+    for cluster, keywords in CLUSTER_KEYWORDS.items():
+        score = sum(1 for kw in keywords if kw in text)
+        if score > 0:
+            scores[cluster] = score
+    
+    # Return cluster with highest score
+    if scores:
+        return max(scores, key=scores.get)
+    
+    return "Other"
+
+
+def parse_api_call(api_item: Dict[str, Any], topic_id: Optional[str] = None) -> Dict[str, str]:
+    """
+    Convert an API result item to the database call format.
+    Extracts unique topic_id from API response.
+    """
+    if not api_item:
+        return {}
+    
+    # Extract topic_id from API response FIRST
+    md = _sg(api_item, "metadata", {})
+    extracted_topic_id = (
+        _pf(api_item, "identifier") or 
+        _pf(api_item, "callIdentifier") or 
+        _pf(md, "callIdentifier") or 
+        _pf(md, "identifier") or 
+        topic_id or 
+        "API-CALL"
+    )
+    
+    # Now parse with the extracted topic_id
+    parsed = parse_topic_json(str(extracted_topic_id), api_item)
+    
+    # Normalize status to readable format
+    status_raw = parsed.get("status", "")
+    status = str(status_raw).strip().lower()
+    
+    # Try to extract from JSON if it's stringified
+    try:
+        if status.startswith('{'):
+            status_obj = json.loads(status_raw)
+            status = str(status_obj.get("id") or status_obj.get("label", "")).lower()
+    except:
+        pass
+    
+    # Map to readable status
+    if "31094501" in status or "open" in status:
+        parsed["status"] = "Open"
+    elif "31094502" in status or "forthcoming" in status:
+        parsed["status"] = "Forthcoming"
+    elif "31094503" in status or "closed" in status:
+        parsed["status"] = "Closed"
+    else:
+        parsed["status"] = "Open"  # Default to Open for API fetches
+    
+    # Add cluster assignment
+    title = parsed.get("title", "")
+    description = parsed.get("call_description", "")
+    cluster = assign_cluster(title, description)
+    parsed["cluster"] = cluster
+    
+    return parsed

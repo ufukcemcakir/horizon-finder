@@ -600,6 +600,12 @@
                 }
             }
 
+            // Handle fetch API button
+            if (e.target.id === 'fetch-api-btn') {
+                e.preventDefault();
+                fetchCallsFromAPI(e.target);
+            }
+
             // Use a handled flag so fallback handlers don't run after data-action
             let handled = false;
 
@@ -873,6 +879,50 @@
                 statusDiv.innerHTML = `<div class="alert alert-error">Error: ${err.message}</div>`;
                 const runBtn = document.querySelector('[data-action="runScreening"]');
                 if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ''; }
+            });
+        }
+
+        function fetchCallsFromAPI(btn) {
+            const statusDiv = document.getElementById('api-fetch-status');
+            if (!statusDiv) return;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Fetching calls...';
+            }
+
+            statusDiv.innerHTML = '<div class="spinner"></div> Fetching calls from EU API (this may take a minute)...';
+
+            fetch('/api/calls/fetch-from-api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    let html = `<div class="alert alert-success">
+                        ✓ Successfully imported ${data.saved} calls from the EU API!<br>
+                        <small>Fetched: ${data.fetched} | Parsed: ${data.parsed} | Saved: ${data.saved}</small>
+                    </div>`;
+                    statusDiv.innerHTML = html;
+                    
+                    // Refresh discover page if user is on it
+                    if (currentPage === 'discover') {
+                        setTimeout(() => changePage('discover'), 1000);
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to fetch calls');
+                }
+            })
+            .catch(err => {
+                statusDiv.innerHTML = `<div class="alert alert-error">Error: ${err.message}</div>`;
+            })
+            .finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 Fetch Latest Calls from EU API';
+                }
             });
         }
 

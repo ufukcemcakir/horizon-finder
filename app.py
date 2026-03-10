@@ -26,7 +26,7 @@ from modular.phase1_db import (
     add_interested, get_interested_calls, remove_interested, clear_interested,
     save_contribution, get_contribution
 )
-from modular.phase1_api import fetch_call_by_topic_id, parse_topic_json
+from modular.phase1_api import fetch_call_by_topic_id, parse_topic_json, fetch_open_grant_calls, parse_api_call
 from modular.phase1_pdf import extract_topic_ids_from_pdf
 from modular.phase1_utils import _is_valid_email
 from modular.phase1_agents import _get_groq_client, run_screening_agent, run_analysis_agent, groq_contribution_idea
@@ -185,6 +185,60 @@ def api_fetch_calls():
     }), 200
 
 
+@app.route('/api/calls/fetch-from-api', methods=['POST'])
+def api_fetch_from_eu():
+    """Fetch all open grant calls from EU Funding & Tenders API"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated.'}), 401
+    
+    try:
+        # Fetch calls from EU API
+        api_calls = fetch_open_grant_calls(page_size=50, language='en', sleep_s=0.1)
+        
+        if not api_calls:
+            return jsonify({'error': 'No calls found from API'}), 400
+        
+        # Parse and prepare calls for database
+        parsed_calls = []
+        failed_parse = 0
+        for i, api_item in enumerate(api_calls):
+            try:
+                call = parse_api_call(api_item)
+                if call.get('topic_id'):
+                    parsed_calls.append(call)
+                else:
+                    print(f"[WARN] Call {i} has no topic_id: {call}")
+                    failed_parse += 1
+            except Exception as e:
+                print(f"[ERROR] Parsing call {i}: {e}")
+                failed_parse += 1
+                continue
+        
+        print(f"[DEBUG] Parsed {len(parsed_calls)} calls, {failed_parse} failed to parse")
+        
+        # Save to database
+        saved, save_failed = save_calls(parsed_calls)
+        
+        print(f"[DEBUG] Saved {saved} calls, {len(save_failed)} save failures")
+        if save_failed:
+            print(f"[DEBUG] Sample failures: {save_failed[:3]}")
+        
+        return jsonify({
+            'success': True,
+            'fetched': len(api_calls),
+            'parsed': len(parsed_calls),
+            'saved': saved,
+            'failed': len(save_failed),
+            'message': f'Successfully saved {saved} calls from EU API'
+        }), 200
+    
+    except Exception as e:
+        print(f"[ERROR] API fetch error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to fetch from API: {str(e)}'}), 500
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DISCOVER ROUTES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -210,6 +264,31 @@ def api_active_calls():
     
     result = df.head(limit).to_dict('records')
     return jsonify({'success': True, 'calls': result, 'count': len(result)}), 200
+
+
+@app.route('/api/debug/calls-count', methods=['GET'])
+def debug_calls_count():
+    """Debug endpoint: show total calls and sample statuses"""
+    from modular.phase1_db import db_query
+    
+    # Get total count
+    total = db_query("SELECT COUNT(*) FROM horizon_calls") or [(0,)]
+    total_count = total[0][0] if total else 0
+    
+    # Get sample statuses
+    statuses = db_query("SELECT DISTINCT status FROM horizon_calls ORDER BY status LIMIT 10") or []
+    status_list = [s[0] for s in statuses]
+    
+    # Count by status
+    status_counts = db_query(
+        "SELECT status, COUNT(*) as cnt FROM horizon_calls GROUP BY status ORDER BY cnt DESC"
+    ) or []
+    
+    return jsonify({
+        'total_calls': total_count,
+        'sample_statuses': status_list,
+        'status_distribution': [{'status': s[0], 'count': s[1]} for s in status_counts]
+    }), 200
 
 
 @app.route('/api/calls/<topic_id>', methods=['GET'])
@@ -776,14 +855,30 @@ def render_upload():
     """Upload PDF page content"""
     html = """
     <div class="page-header">
-        <h1 class="page-title">📤 Upload PDF</h1>
-        <p class="page-desc">Upload a Horizon Europe call list or RFP document to extract topic IDs</p>
+        <h1 class="page-title">� Import Calls</h1>
+        <p class="page-desc">Fetch the latest Horizon Europe grant opportunities from the EU API</p>
     </div>
     
     <div class="card">
+        <h2 class="card-title">🌐 Fetch from EU API</h2>
+        <p style="color: #90aecb; margin-bottom: 1.5rem;">
+            Automatically fetch all open Horizon Europe grant calls directly from the official EU Funding & Tenders API. 
+            Calls are automatically categorized into their respective clusters.
+        </p>
+        <button class="btn btn-primary btn-large" id="fetch-api-btn" style="padding: 1rem 2rem; font-size: 1rem;">
+            🚀 Fetch Latest Calls from EU API
+        </button>
+        <div id="api-fetch-status" style="margin-top: 1.5rem;"></div>
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title">📄 Alternative: Upload PDF</h2>
+        <p style="color: #90aecb; margin-bottom: 1.5rem;">
+            If you have a specific Horizon Europe work programme PDF, you can upload it to extract topic IDs manually.
+        </p>
         <div id="drop-zone" class="upload-drop-zone" style="border: 2px dashed rgba(99,179,237,0.3); border-radius: 8px; padding: 2rem; 
                     text-align: center; cursor: pointer;">
-            <div style="font-size: 2rem; margin-bottom: 1rem;">📄</div>
+            <div style="font-size: 2rem; margin-bottom: 1rem;">📤</div>
             <div style="font-weight: 600; color: #e2eaf6; margin-bottom: 0.5rem;">Drop PDF here or click to upload</div>
             <div style="font-size: 0.85rem; color: #7a90a8;">Supported: PDF files up to 50MB</div>
             <input type="file" id="pdf-input" class="pdf-input" accept=".pdf" style="display: none;">

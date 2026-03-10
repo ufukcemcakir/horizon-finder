@@ -45,7 +45,7 @@ ALLOWED_ACTION_TYPES: frozenset[str] = frozenset({
 
 CALLS_COLS: tuple[str, ...] = (
     "topic_id", "title", "call_description", "summary", "status", "deadline",
-    "opening_date", "type_of_action", "programme_period", "url", "raw_json",
+    "opening_date", "type_of_action", "programme_period", "url", "cluster", "budget", "raw_json",
 )
 _CALLS_PH: str = ",".join("?" * len(CALLS_COLS))
 
